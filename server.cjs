@@ -3,9 +3,14 @@
 // Uses Node.js http module only (no frameworks)
 // Sequential POST handling: parameters are passed in the URL query string
 
-const http = require("http");
+"use strict";
 
+const http = require("http");
+const url = require("url");
 const fs = require("fs");
+
+const DATA_FILE = "appointments.json";
+let appointments = [];
 
 function serveHtml(res, filePath) {
     fs.readFile(filePath, function (err, content) {
@@ -19,25 +24,47 @@ function serveHtml(res, filePath) {
     });
 }
 
-// In memory data model (persistence added in PPA 4)
 
-// add to these as needed
-const slots = [
-  {
-    id: 1,
-    startTime: "2026-02-01T09:00",
-    endTime: "2026-02-01T09:30",
-    myStatus: "Available", 
-    myName: "Jen"
-  },
-  {
-    id: 2,
-    startTime: "2026-02-01T10:00",
-    endTime: "2026-02-01T10:30",
-    myStatus: "Available", 
-    myName: "John"
-  }
-];
+// ---------------------
+// Appointment logic
+// ---------------------
+
+function loadAppointments() {
+    // TODO list: decide what should happen if the file does not exist.
+    // TODO list: decide what should happen if the JSON is invalid.
+    // TODO list: decide whether to log errors to the console or stay silent.
+    try {
+        const text = fs.readFileSync(DATA_FILE, "utf8");
+        appointments = JSON.parse(text);
+        if (!Array.isArray(appointments)) {
+            appointments = [];
+    }
+    } catch (error) {
+        appointments = [];
+    }
+}
+
+
+function saveAppointments() {
+    // TODO list: decide how you want the JSON formatted (pretty vs compact).
+    // TODO list: decide what to do if writing fails.
+    const text = JSON.stringify(appointments, null, 2);
+    fs.writeFileSync(DATA_FILE, text, "utf8");
+}
+
+function sendJson(response, statusCode, data) {
+    response.writeHead(statusCode, { "Content-Type": "application/json" });
+    response.end(JSON.stringify(data));
+}
+
+function sendText(response, statusCode, message) {
+    response.writeHead(statusCode, { "Content-Type": "text/plain" });
+    response.end(message);
+}
+
+
+loadAppointments();
+// console.log(appointments);
 
 
 function sendJson(res, statusCode, payload) {
@@ -58,17 +85,20 @@ function collectFormData() {
     };
 }
 
-*/
 
+// ------------------------
+// Slots logic
+// ------------------------
 
 /* what i don't like about this is that if you start deleting timeslots, there's
 a chance the id numbers get corrupted */
 function nextId() {
 
-    return slots.length + 1;
+    // TODO verify appointments works
+    return appointments.length + 1;
+    
 
 }
-
 
 function validateSlotTimes(startTime, endTime) {
     
@@ -120,28 +150,52 @@ function isOverlap(reqStartTime, reqEndTime) {
 }
 
 
+// ------------------------
+// Server logic
+// ------------------------
 
-const server = http.createServer(function (req, res) {
-    // const parsed = new URL(req.url, "http://localhost:3000");
-    const parsedUrl = new URL(req.url, "http://localhost:3000");
+const server = http.createServer(function(req, res) {
+    
+    const parsed = new URL(req.url, "http://localhost:3000");
+    // const parsedUrl = new URL(req.url, "http://localhost:3000");
+    const parsedUrl = url.parse(req.url, true);  // this week - make me make sense of the url
+    
+    if (req.method === "GET" && parsedUrl.pathname === "/appointments") {
+        // TODO list: decide whether you want to return raw appointments or awrapper object.
+        sendJson(res, 200, appointments);
+    }
+    else if (req.method === "POST" && parsedUrl.pathname === "/appointments") {
+        // NOTE: reading the request body is event driven, but your file operations are synchronous.
+        let body = "";
+
+        req.on("data", function(chunk) {
+            body += chunk;
+        });
+
+        req.on("end", function() {
+            // TODO list: validate the incoming appointment fields before pushing into the array.
+            const newAppointment = JSON.parse(body);
+            appointments.push(newAppointment);
+            saveAppointments();
+            sendText(res, 200, "TODO");
+        });
+    }
+    
+    
     const path = parsedUrl.pathname;
-    const query = Object.fromEntries(parsedUrl.searchParams.entries());
-
+    //console.log(parsedUrl.pathname);
+    //const query = Object.fromEntries(parsedUrl.searchParams.entries());
+    
+    
     let filePath = "./public/index.html";
 
     if (req.url === "/index") { filePath = "./public/index.html"; }
     if (req.url === "/provider") { filePath = "./public/provider.html"; }
     if (req.url === "/client") { filePath = "./public/client.html"; }
     if (req.url === "/appt") { filePath = "./public/appt.html"; }
-    
 
-    /*if (req.method === "GET" && path === "/api/slots") {
-    
-        sendJson(res, 200, slots);
-        return;
-    }
-    */
-   if (req.method === "GET" && path === "/api/slots") {
+
+   /*if (req.method === "GET" && path === "/api/slots") {
     // check if query.id is provided
     if (query.id) {
         const slotId = parseInt(query.id, 10);
@@ -153,11 +207,59 @@ const server = http.createServer(function (req, res) {
         sendJson(res, 200, slot);
         return;
     }
+    */
 
+
+
+    
+    
+
+    
+   
+/*
     // if no id, return all slots
     sendJson(res, 200, slots);
     return;
-}
+    }
+*/
+
+    if (req.method === "GET" && parsedUrl.pathname === "/appointments") {
+        // TODO list: decide whether you want to return raw appointments or awrapper object.
+        sendJson(res, 200, appointments);
+    }
+    else if (req.method === "POST" && parsedUrl.pathname === "/appointments") {
+        // NOTE: reading the request body is event driven, but your file operations are synchronous.
+        let body = "";
+
+        req.on("data", function(chunk) {
+            body += chunk;
+        });
+
+        req.on("end", function() {
+            // TODO list: validate the incoming appointment fields before pushing into the array.
+            const newAppointment = JSON.parse(body);
+            appointments.push(newAppointment);
+            saveAppointments();
+            sendText(res, 200, "TODO");
+        });
+    }
+
+    else if (req.method === "DELETE" && parsedUrl.pathname.startsWith("/appointments/")) {
+        const parts = parsedUrl.pathname.split("/");
+        const index = Number(parts[2]);
+        
+        // TODO list: decide what error message to send for an invalid index.
+        if (!Number.isNaN(index) && index >= 0 && index < appointments.length) {
+            appointments.splice(index, 1);
+            saveAppointments();
+            sendText(res, 200, "Delete 200");
+        } else {
+            sendText(res, 400, "Delete 400");
+        }
+        }
+    else {
+        sendText(res, 404, "Oh no");
+    }
 
     if (path === "/provider") {
         serveHtml(res, "./public/provider.html");
@@ -281,7 +383,13 @@ const server = http.createServer(function (req, res) {
 });
 
 
+server.listen(3000);
+console.log("Server running at http://localhost:3000");
 
+
+/*
 server.listen(3000, function (){
     console.log("Server running at http://localhost:3000");
 })
+
+*/
