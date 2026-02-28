@@ -119,6 +119,18 @@ function isOverlap(reqStartTime, reqEndTime) {
     return false;
 }
 
+// Check time isn't duplicate
+function isZeroDuration(reqStartTime, reqEndTime) {
+    // return true if timeslot overlaps any other timeslot
+    // Scenario: overlap where new timeslot overlaps beginning of another
+    if (reqStartTime === reqEndTime) {
+        console.log("Appointments must be at least 1 minute long");
+        return true;
+    }
+    // else return false, no overlap found
+    return false;
+}
+
 
 
 const server = http.createServer(function (req, res) {
@@ -261,7 +273,13 @@ const server = http.createServer(function (req, res) {
             sendJson(res, 409, { error: "Your requested time slot overlaps on another"});
             return;
         }
-        
+
+        // prevent no length appt
+        if (isZeroDuration(startTime, endTime)) {
+            sendJson(res, 409, { error: "Appointments must be at least 1 minute long"});
+            return;
+        }
+        console.log(myStatus)
         const slot = {
             id : nextId(),
             startTime : startTime,
@@ -271,6 +289,7 @@ const server = http.createServer(function (req, res) {
         };
 
         slots.push(slot);
+        console.log(slots)
         
         sendJson(res, 201, slot);
         return;

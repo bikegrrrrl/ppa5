@@ -12,7 +12,8 @@ let currentYear = now.getFullYear();
 refreshCalendar();
 
 
-// Highlight today
+// Highlight today functionality
+// Puts blue square around current date on calendar
 function highlightToday() {
   const today = new Date();
   
@@ -27,7 +28,6 @@ function highlightToday() {
     }
   });
 }
-
 
 
 // Show a user facing message
@@ -58,7 +58,6 @@ function refreshCalendar() {
 
     xhr.send();
 }
-
 
 
 // Render the month grid, then insert slot items into each day cell
@@ -147,6 +146,7 @@ function renderCalendar(rawSlots) {
 }
 
 
+// Audit time
 // Before send, if inputs are empty, send message
 function auditTimeInputs(startTime, endTime) {
     if ( startTime == undefined ) {
@@ -159,14 +159,17 @@ function auditTimeInputs(startTime, endTime) {
 }
 
 
-// Send POST then refresh the calendar on success
-function sendCreateSlot(startTime, endTime) {
+// Send POST the new timeslot then refresh the calendar on success
+function sendCreateSlot(startTime, endTime, myStatus, myName) {
 
     const xhr = new XMLHttpRequest();
 
     const path =
+    // i think change this to appointments
         "/api/slots?startTime=" + encodeURIComponent(startTime) +
-        "&endTime=" + encodeURIComponent(endTime);
+        "&endTime=" + encodeURIComponent(endTime) +
+        "&myStatus=" + encodeURIComponent(myStatus) +
+        "&myName=" + encodeURIComponent(myName);
 
     xhr.open("POST", path);
 
@@ -177,13 +180,13 @@ function sendCreateSlot(startTime, endTime) {
 
             showMessage("Slot created", "ok");
             refreshCalendar();
-        
+
         } else {
 
             const data = JSON.parse(xhr.responseText || "{}");
             showMessage(data.error || "Create failed", "error");
         }
-    
+
     };
 
     xhr.send();
@@ -205,13 +208,43 @@ function setMonthTitle(month, year) {
 }
 
 
+
+
+
+
 // Button click creates a slot
 document.getElementById("createSlotButton").addEventListener("click", function () {
 
     const startTime = document.getElementById("startTimeInput").value;
     const endTime = document.getElementById("endTimeInput").value;
+    const myStatus = document.getElementById("myStatus").value;
+    const myName = document.getElementById("myName").value;
 
-    sendCreateSlot(startTime, endTime);
+    sendCreateSlot(startTime, endTime, myStatus, myName);
+
+});
+
+// Listener to modify the endTime after a startTime is selected
+// auto-adds 30 minutes to start time
+document.getElementById("startTimeInput").addEventListener("change", function () {
+
+    const startInput = document.getElementById("startTimeInput");
+    const endInput = document.getElementById("endTimeInput");
+
+    if (!startInput.value) return;
+
+    const startDate = new Date(startInput.value);
+
+    // Add 30 minutes
+    startDate.setMinutes(startDate.getMinutes() + 30);
+
+    // Remove 5 hours - somehow it's in UTC time, this fixes that 
+    startDate.setHours(startDate.getHours() - 6);
+
+    // Format correctly for datetime-local
+    const formatted = startDate.toISOString().slice(0, 16);
+
+    endInput.value = formatted;
 
 });
 

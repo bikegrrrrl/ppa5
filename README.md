@@ -22,6 +22,19 @@
 * Highlights today's date
 
 
+### branch start ppa5
+* includes calendar
+* retroactively adds functionality from ppa4:
+    * datetime picker
+    * overlap
+    * Added auto-population of endTime based on selected startTime by 30 minutes
+    * check duplicates
+    * TODO: handle 409 errors with duplicates, etc
+    * Save status and name with appt
+
+    
+
+
 ## To Do
 * Add delete button (that works) on appt detail page
 
