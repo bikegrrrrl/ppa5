@@ -1,58 +1,45 @@
+<!-- public/provider.html -->
 <!DOCTYPE html>
+
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>provider page</title>
-    <link rel="stylesheet" href="style.css">
-
-
-
+    <title>Provider Calendar</title>
+    <link rel="stylesheet" href="/style.css">
 </head>
-
 <body>
- <h1>Advising Appointment Manager</h1>
 
- <p id="message"></p>
-  
+ <h1 id="monthTitle"></h1>
+
+ <div id="message"></div>
+
+ <section id="createSlotPanel">
+    <h2>Create an advising appointment</h2>
+
+    <label>Start time</label>
+       <input id="startTimeInput" type="datetime-local">
     
-  
-    <ul id="slotsList"></ul>
+
+    <label>End time</label>
+        <input id="endTimeInput" type="datetime-local">
     
-    <!---form-->
-    <form id="slotForm">
-        <label>Start time</label>
-        <input id="startTime" type="datetime-local">
-        <label>End time</label>
-        <input id="endTime" type="datetime-local">
-        <label for="myStatus">Select Appt Status</label>
-        <select id="myStatus" name="myStatus" type="text">
+    <label>Status</label>
+    <select id="myStatus" name="myStatus" type="text">
             <option value="Available">Available</option>
             <option value="Booked">Booked</option>
-        </select>
-        <label>Your name</label>
+    </select>
+    <label>Student name</label>
         <input id="myName" type="text" placeholder="your name">
-        
-        <button id="createBtn" type="submit">Create slot</button>
-    </form>
 
-    <table>
-    <thead>
-        <tr>
-        <th>Start time</th>
-        <th>End time</th>
-        <th>Status</th>
-        <th>Name</th>
-        <th>Action</th>
-        </tr>
-    </thead>
-    <tbody id="slotTableBody"></tbody>
-    </table>
+    <button id="createSlotButton">Create Slot</button>
+ </section>
 
-<div class="button-row">
-    <button id="loadSlotsBtn">Reload appointment slots</button>
-</div>
+ <section>
+    <h2>Month view</h2>
+    <div id="calendarGrid"></div>
+ </section>
 
+    <!-- Script runs after the DOM exists -->
     <script src="provider.js"></script>
     
 
